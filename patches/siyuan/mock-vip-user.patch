@@ -1,12 +1,9 @@
 diff --git a/kernel/api/setting.go b/kernel/api/setting.go
-index c6fe820..150ae62 100644
 --- a/kernel/api/setting.go
 +++ b/kernel/api/setting.go
-@@ -822,18 +822,23 @@ var getPublish = contractHandler(apicontract.GetPublish, func(c *gin.Context, re
- })
- 
+@@ -830,14 +830,19 @@
  var getCloudUser = contractHandler(apicontract.GetCloudUser, func(c *gin.Context, request apicontract.SettingCloudUserRequest) apicontract.Response[*apicontract.SettingUser] {
--	user, err := model.RefreshUser(request.Token)
+-	user, err := model.GetCloudUser(request.Token, request.Cached)
 -	data := settingUserPayload(user)
 -	if err == nil {
 -		return apicontract.Success(data)
@@ -36,35 +33,23 @@ index c6fe820..150ae62 100644
 +	model.Conf.Save()
 +	return apicontract.Success(settingUserPayload(user))
  }, func(c *gin.Context) *apicontract.Response[*apicontract.SettingUser] {
- 	if model.IsAdminRoleContext(c) {
- 		return nil
 diff --git a/kernel/model/cloud_account_auth.go b/kernel/model/cloud_account_auth.go
-index 8c5330c..814e4f8 100644
 --- a/kernel/model/cloud_account_auth.go
 +++ b/kernel/model/cloud_account_auth.go
-@@ -22,6 +22,10 @@ func cloudAccountAuthFailureHandler(token string) func() {
- 	if requestedUser == nil {
- 		return func() {}
- 	}
+@@ -25,1 +25,5 @@
 +	// 本地免登录身份没有云端会话，云端认证失败不能清除其同步权限。
 +	if requestedUser.UserId == "0" && requestedUser.UserToken == "token" {
 +		return func() {}
 +	}
  	return func() {
- 		cloudAccountMu.Lock()
- 		defer cloudAccountMu.Unlock()
 diff --git a/kernel/model/cloud_service.go b/kernel/model/cloud_service.go
-index b236e60..96ad7ee 100644
 --- a/kernel/model/cloud_service.go
 +++ b/kernel/model/cloud_service.go
-@@ -270,7 +270,6 @@ var (
- 
+@@ -270,4 +270,3 @@
  func RefreshCheckJob2H() {
  	go refreshSubscriptionExpirationRemind()
 -	go refreshUser()
  	go refreshAnnouncement()
- }
- 
 diff --git a/kernel/api/unlock_cloud_account_test.go b/kernel/api/unlock_cloud_account_test.go
 new file mode 100644
 index 0000000..e9ecd33
