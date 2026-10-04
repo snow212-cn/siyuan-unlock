@@ -84,16 +84,6 @@ jobs:
       - name: Install Node pnpm
         run: npm install -g ${{ github.event.inputs.packageManager }}
         working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
-      - name: Get pnpm store path
-        id: pnpm-store
-        shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> "${GITHUB_OUTPUT}"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('siyuan-note/siyuan/app/pnpm-lock.yaml') }}
 
       - name: Verify account-free sync
         shell: bash
@@ -101,7 +91,7 @@ jobs:
         run: bash scripts/check-account-free.sh siyuan
 
       - name: Install Node Dependencies
-        run: pnpm install --no-frozen-lockfile --prefer-offline
+        run: pnpm install --no-frozen-lockfile
         working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
 
       - name: Building UI

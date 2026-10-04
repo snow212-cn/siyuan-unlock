@@ -10,79 +10,7 @@ on:
         required: true
 
 jobs:
-  prepare-ui:
-    name: build UI once
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Verify official repository
-        shell: bash
-        env:
-          OFFICIAL_BUILD_MARKER: ${{ secrets.SIYUAN_UNLOCK_OFFICIAL_BUILD }}
-        run: |
-          if [[ "${GITHUB_REPOSITORY}" == "appdev/siyuan-unlock" ]]; then
-            if [[ -z "${OFFICIAL_BUILD_MARKER}" ]]; then
-              echo "::error::The official repository requires SIYUAN_UNLOCK_OFFICIAL_BUILD."
-              exit 1
-            fi
-          elif [[ "${GITHUB_REPOSITORY}" != "snow212-cn/siyuan-unlock" ]]; then
-            echo "::error::This release workflow is only enabled for the official repository or the configured maintenance fork."
-            exit 1
-          fi
-
-      - uses: actions/checkout@v4
-        with:
-          path: siyuan-note
-
-      - name: clone origin and apply patches
-        shell: bash
-        run: |
-          set -euo pipefail
-          workspace="${{ github.workspace }}"
-          cd "${workspace}/siyuan-note/"
-          git clone --branch "${{ github.event.inputs.version }}" --depth=1 https://github.com/siyuan-note/siyuan.git
-          cd siyuan
-          git apply "${workspace}/siyuan-note/patches/siyuan/disable-update.patch"
-          git apply "${workspace}/siyuan-note/patches/siyuan/default-config.patch"
-          git apply "${workspace}/siyuan-note/patches/siyuan/mock-vip-user.patch"
-          git apply "${workspace}/siyuan-note/patches/siyuan/hide-account-entry.patch"
-          git apply "${workspace}/siyuan-note/patches/siyuan/first-launch-notice.patch"
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Install Node pnpm
-        run: npm install -g ${{ github.event.inputs.packageManager }}
-        working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
-
-      - name: Get pnpm store path
-        id: pnpm-store-prepare
-        shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> "${GITHUB_OUTPUT}"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.pnpm-store-prepare.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('siyuan-note/siyuan/app/pnpm-lock.yaml') }}
-
-      - name: Install Node Dependencies
-        run: pnpm install --no-frozen-lockfile --prefer-offline
-        working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
-
-      - name: Building UI
-        run: pnpm run build
-        working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
-
-      - name: Upload UI build
-        uses: actions/upload-artifact@v7
-        with:
-          name: siyuann-ui-${{ github.event.inputs.version }}
-          path: ${{ github.workspace }}/siyuan-note/siyuan/app/stage/build
-          if-no-files-found: error
-
   build:
-    needs: prepare-ui
     runs-on: ${{ matrix.config.os }}
     strategy:
       matrix:
@@ -97,6 +25,17 @@ jobs:
             cc_path: "x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc"
             suffix: "linux.tar.gz"
             deb_suffix: "linux.deb"
+          - os: ubuntu-22.04
+            name: ubuntu build linux.AppImage
+            kernel_path: "../app/kernel-linux/SiYuan-Kernel"
+            build_mode: "-buildmode=pie"
+            build_args: "-s -w -extldflags -static-pie -X github.com/siyuan-note/siyuan/kernel/util.Mode=prod"
+            electron_args: "dist-linux"
+            goos: "linux"
+            goarch: "amd64"
+            cc_path: "x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc"
+            suffix: "linux.AppImage"
+            deb_suffix: ""
           - os: ubuntu-22.04
             kernel_path: "../app/kernel-linux-arm64/SiYuan-Kernel"
             build_mode: "-buildmode=pie"
@@ -179,41 +118,19 @@ jobs:
           git apply "${workspace}/siyuan-note/patches/siyuan/hide-account-entry.patch"
           git apply "${workspace}/siyuan-note/patches/siyuan/first-launch-notice.patch"
 
-      - name: Download UI build
-        uses: actions/download-artifact@v8
-        with:
-          name: siyuann-ui-${{ github.event.inputs.version }}
-          path: ${{ github.workspace }}/siyuan-note/siyuan/app/stage/build
           git status
 
-      - name: Cache Linux toolchain
-        id: musl-cache
-        if: contains(matrix.config.goos, 'linux')
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/siyuan-musl
-          key: ${{ runner.os }}-musl-${{ matrix.config.goarch }}
-
-      - name: Download Linux toolchain
-        if: contains(matrix.config.goos, 'linux') && steps.musl-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          mkdir -p ~/.cache/siyuan-musl
-          if [ "${{ matrix.config.goarch }}" = "amd64" ]; then
-            wget -q https://github.com/appdev/musl-archive/releases/download/latest/x86_64-linux-musl-cross.tgz -O ~/.cache/siyuan-musl/linux-amd64.tgz
-          elif [ "${{ matrix.config.goarch }}" = "arm64" ]; then
-            wget -q https://github.com/appdev/musl-archive/releases/download/latest/aarch64-linux-musl-cross.tgz -O ~/.cache/siyuan-musl/linux-arm64.tgz
-          fi
-
       - name: Set up Cross Compilation Toolchains for Linux
-        if: contains(matrix.config.goos, 'linux')
-        shell: bash
+        if: contains( matrix.config.goos, 'linux')
         run: |
           sudo mkdir -p /usr/local/musl
+      
           if [ "${{ matrix.config.goarch }}" = "amd64" ]; then
-            sudo tar -xzf ~/.cache/siyuan-musl/linux-amd64.tgz -C /usr/local/musl
+            wget https://github.com/appdev/musl-archive/releases/download/latest/x86_64-linux-musl-cross.tgz
+            sudo tar -xzf x86_64-linux-musl-cross.tgz -C /usr/local/musl
           elif [ "${{ matrix.config.goarch }}" = "arm64" ]; then
-            sudo tar -xzf ~/.cache/siyuan-musl/linux-arm64.tgz -C /usr/local/musl
+            wget https://github.com/appdev/musl-archive/releases/download/latest/aarch64-linux-musl-cross.tgz
+            sudo tar -xzf aarch64-linux-musl-cross.tgz -C /usr/local/musl
           fi
 
       - name: Set up MingGW
@@ -254,16 +171,6 @@ jobs:
         run: npm install -g ${{ github.event.inputs.packageManager }}
         working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
 
-      - name: Get pnpm store path
-        id: pnpm-store-matrix
-        shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> "${GITHUB_OUTPUT}"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.pnpm-store-matrix.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('siyuan-note/siyuan/app/pnpm-lock.yaml') }}
       - name: Verify account-free sync
         shell: bash
         working-directory: ${{ github.workspace }}/siyuan-note
@@ -273,6 +180,9 @@ jobs:
         run: pnpm install --no-frozen-lockfile
         working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
 
+      - name: Building UI
+        run: pnpm run build
+        working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
 
       - name: Generate Icon Resource and Properties/Version Info For Windows
         run: ${{ github.workspace }}\go\${{ matrix.config.gobin }}\goversioninfo -platform-specific=true -icon="resource\icon.ico" -manifest="resource\goversioninfo.exe.manifest"
@@ -325,32 +235,6 @@ jobs:
           grep -F $'build\t-buildmode=pie' <<<"${build_info}"
           grep -F -- '-extldflags -static-pie' <<<"${build_info}"
 
-      - name: Cache Linux Electron downloads
-        if: matrix.config.goos == 'linux'
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/.cache/electron
-            ~/.cache/electron-builder
-          key: ${{ runner.os }}-electron-${{ matrix.config.goarch }}-${{ hashFiles('siyuan-note/siyuan/app/package.json') }}
-
-      - name: Cache macOS Electron downloads
-        if: matrix.config.goos == 'darwin'
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/Library/Caches/electron
-            ~/Library/Caches/electron-builder
-          key: ${{ runner.os }}-electron-${{ matrix.config.goarch }}-${{ hashFiles('siyuan-note/siyuan/app/package.json') }}
-
-      - name: Cache Windows Electron downloads
-        if: matrix.config.goos == 'windows'
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/AppData/Local/electron/Cache
-            ~/AppData/Local/electron-builder/Cache
-          key: ${{ runner.os }}-electron-${{ matrix.config.goarch }}-${{ hashFiles('siyuan-note/siyuan/app/package.json') }}
       - name: Building Electron
         run: pnpm run ${{ matrix.config.electron_args }}
         working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
@@ -376,19 +260,6 @@ jobs:
           tag: ${{ github.event.inputs.version }}
           replacesArtifacts: true
 
-      - name: Upload Linux AppImage
-        if: matrix.config.goos == 'linux' && matrix.config.goarch == 'amd64'
-        uses: ncipollo/release-action@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          artifacts: ${{ github.workspace }}/siyuan-note/siyuan/app/build/siyuan-*linux.AppImage
-          allowUpdates: true
-          omitBody: true
-          omitName: true
-          tag: ${{ github.event.inputs.version }}
-          replacesArtifacts: true
       - name: Upload .deb packages
         if: ${{ matrix.config.deb_suffix != '' }}
         uses: ncipollo/release-action@v1
