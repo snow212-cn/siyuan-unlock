@@ -25,8 +25,13 @@ jobs:
         env:
           OFFICIAL_BUILD_MARKER: ${{ secrets.SIYUAN_UNLOCK_OFFICIAL_BUILD }}
         run: |
-          if [[ "${GITHUB_REPOSITORY}" != "appdev/siyuan-unlock" || -z "${OFFICIAL_BUILD_MARKER}" ]]; then
-            echo "::error::This release workflow can only run in the official repository."
+          if [[ "${GITHUB_REPOSITORY}" == "appdev/siyuan-unlock" ]]; then
+            if [[ -z "${OFFICIAL_BUILD_MARKER}" ]]; then
+              echo "::error::The official repository requires SIYUAN_UNLOCK_OFFICIAL_BUILD."
+              exit 1
+            fi
+          elif [[ "${GITHUB_REPOSITORY}" != "snow212-cn/siyuan-unlock" ]]; then
+            echo "::error::This release workflow is only enabled for the official repository or the configured maintenance fork."
             exit 1
           fi
 
