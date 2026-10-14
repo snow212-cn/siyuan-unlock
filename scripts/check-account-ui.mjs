@@ -27,22 +27,31 @@ runInNewContext(`${source}\nregisterSyncTab(tab);`, context);
 assert.deepEqual(groups, ['sync', 'repo'], 'Sync settings must contain no account/login group');
 console.log('PASS: sync settings register only sync and local repository groups');
 
-const panel = {innerHTML: '', querySelector: () => null, querySelectorAll: () => [], addEventListener() {}};
+const makeElement = () => ({
+    innerHTML: '',
+    classList: {toggle() {}},
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+});
+const providerConfigElement = makeElement();
+const rowElement = makeElement();
 const syncContext = {
     window: {siyuan: {user: {userSiYuanOneTimePayStatus: 1}, languages: {_kernel: {214: 'LOGIN_REQUIRED'}},
         config: {sync: {provider: 2, s3: {}, webdav: {}}}}},
     getCloudURL: () => '',
     getHostCapabilities: () => ({importExport: false}),
-    root: {querySelector: () => panel},
+    root: {querySelector: selector => selector === '#syncProviderConfig' ? providerConfigElement :
+        selector === '#syncProviderConfigRow' ? rowElement : null},
 };
 const renderSource = load('app/src/util/escape.ts') + '\n' + load('app/src/util/needSubscribe.ts') + '\n' + load('app/src/config/tabs/syncUi.ts');
 for (const provider of [2, 3]) {
     syncContext.window.siyuan.config.sync.provider = provider;
     runInNewContext(`${renderSource}\nrenderProviderConfig(root);`, {...syncContext});
-    assert.match(panel.innerHTML, /id="endpoint"/, 'Third-party sync configuration must be editable');
-    assert.doesNotMatch(panel.innerHTML, /LOGIN_REQUIRED/);
+    assert.match(rowElement.innerHTML, /id="endpoint"/, 'Third-party sync configuration must be editable');
+    assert.doesNotMatch(providerConfigElement.innerHTML, /LOGIN_REQUIRED/);
 }
 syncContext.window.siyuan.user = null;
 runInNewContext(`${renderSource}\nrenderProviderConfig(root);`, {...syncContext});
-assert.match(panel.innerHTML, /LOGIN_REQUIRED/, 'Control case must detect the reported missing-user regression');
+assert.match(providerConfigElement.innerHTML, /LOGIN_REQUIRED/, 'Control case must detect the reported missing-user regression');
 console.log('PASS: S3/WebDAV configuration renders for local unlock state; missing-user control is blocked');
