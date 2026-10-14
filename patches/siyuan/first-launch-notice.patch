@@ -236,7 +236,6 @@ index ee9a4a2..5c7c209 100644
  import {removeBlockPanelEditors} from "./block/panelRemoval";
 +import {openChangelog} from "./boot/openChangelog";
 +import {openFirstLaunchNotice} from "./boot/firstLaunchNotice";
- 
 @@ -355,2 +357,4 @@
                          await initWindowWithLoading(() => onGetConfig(response.data.start, this), setTabPosition);
 +                        await openFirstLaunchNotice();
