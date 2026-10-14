@@ -46,8 +46,9 @@ index 0000000..0000000 100644
 +func TestStableUpdateUsesUnlockGitHubRelease(t *testing.T) {
 +	originalConf := Conf
 +	Conf = NewAppConf()
-+	Conf.System = conf.NewSystem()
-+	Conf.System.UpdateChannel = conf.UpdateChannelStable
++	system := conf.NewSystem()
++	system.UpdateChannel = conf.UpdateChannelStable
++	Conf.System.Store(system)
 +
 +	githubReleasesLock.Lock()
 +	originalReleases := cachedGitHubReleases
