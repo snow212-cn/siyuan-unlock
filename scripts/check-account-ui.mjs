@@ -35,7 +35,7 @@ const syncContext = {
     getHostCapabilities: () => ({importExport: false}),
     root: {querySelector: () => panel},
 };
-const renderSource = load('app/src/util/needSubscribe.ts') + '\n' + load('app/src/config/tabs/syncUi.ts');
+const renderSource = load('app/src/util/escape.ts') + '\n' + load('app/src/util/needSubscribe.ts') + '\n' + load('app/src/config/tabs/syncUi.ts');
 for (const provider of [2, 3]) {
     syncContext.window.siyuan.config.sync.provider = provider;
     runInNewContext(`${renderSource}\nrenderProviderConfig(root);`, {...syncContext});
