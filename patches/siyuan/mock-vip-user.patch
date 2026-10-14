@@ -157,9 +157,9 @@ index 0000000..197fd36
 +func TestUnlockAccountSurvivesCloudAuthenticationFailure(t *testing.T) {
 +	for _, provider := range []int{conf.ProviderS3, conf.ProviderWebDAV} {
 +		setupCloudAccountAuthTest(t)
-+		syncConfig := Conf.Sync.Load()
-		syncConfig.Provider = provider
-		Conf.Sync.Store(syncConfig)
+++		syncConfig := Conf.Sync.Load()
++		syncConfig.Provider = provider
++		Conf.Sync.Store(syncConfig)
 +		user := &conf.User{UserId: "0", UserToken: "token", UserSiYuanOneTimePayStatus: 1}
 +		Conf.SetUser(user)
 +		called := false
