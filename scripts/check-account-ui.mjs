@@ -48,7 +48,8 @@ const renderSource = load('app/src/util/escape.ts') + '\n' + load('app/src/util/
 for (const provider of [2, 3]) {
     syncContext.window.siyuan.config.sync.provider = provider;
     runInNewContext(`${renderSource}\nrenderProviderConfig(root);`, {...syncContext});
-    assert.match(rowElement.innerHTML, /id="endpoint"/, 'Third-party sync configuration must be editable');
+    assert.match(rowElement.innerHTML, /data-action="configureSync"/, 'Third-party sync configuration must expose its configuration dialog');
+    assert.match(renderSource, /id: "endpoint"/, 'Third-party sync configuration dialog must define an editable endpoint field');
     assert.doesNotMatch(providerConfigElement.innerHTML, /LOGIN_REQUIRED/);
 }
 syncContext.window.siyuan.user = null;
