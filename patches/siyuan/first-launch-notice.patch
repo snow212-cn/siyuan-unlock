@@ -236,7 +236,7 @@ index ee9a4a2..5c7c209 100644
  import {removeBlockPanelEditors} from "./block/panelRemoval";
 +import {openChangelog} from "./boot/openChangelog";
 +import {openFirstLaunchNotice} from "./boot/firstLaunchNotice";
-@@ -355,2 +357,4 @@
+@@ -355,4 +357,6 @@
                          await initWindowWithLoading(() => onGetConfig(response.data.start, this), setTabPosition);
 +                        await openFirstLaunchNotice();
 +                        openChangelog();
@@ -247,14 +247,14 @@ diff --git a/app/src/mobile/index.ts b/app/src/mobile/index.ts
 index 3454d0d..06634d1 100644
 --- a/app/src/mobile/index.ts
 +++ b/app/src/mobile/index.ts
-@@ -82,1 +82,2 @@
+@@ -82,5 +82,6 @@
  import {showMobileBars} from "./util/mobileBars";
 +import {openFirstLaunchNotice} from "../boot/firstLaunchNotice";
  import {initializeEnglishCommandTranslations} from "../command/english";
  import {loadLanguages} from "../boot/loadLanguages";
  import {scrollInputIntoView} from "./util/visibleViewport";
  import {installPluginStorageFetchAppId} from "../util/fetchAppId";
-@@ -255,3 +255,4 @@
+@@ -255,5 +255,6 @@
                                  await initFramework(this, confResponse.data.start);
                                  initRightMenu(this);
 +                                await openFirstLaunchNotice();
