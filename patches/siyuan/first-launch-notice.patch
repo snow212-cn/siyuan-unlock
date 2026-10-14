@@ -232,7 +232,7 @@ diff --git a/app/src/index.ts b/app/src/index.ts
 index ee9a4a2..5c7c209 100644
 --- a/app/src/index.ts
 +++ b/app/src/index.ts
-@@ -78,3 +78,5 @@
+@@ -78,2 +78,4 @@
  import {removeBlockPanelEditors} from "./block/panelRemoval";
 +import {openChangelog} from "./boot/openChangelog";
 +import {openFirstLaunchNotice} from "./boot/firstLaunchNotice";
