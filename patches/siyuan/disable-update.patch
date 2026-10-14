@@ -34,7 +34,7 @@ diff --git a/kernel/model/updater_release_test.go b/kernel/model/updater_release
 index 0000000..0000000 100644
 --- a/kernel/model/updater_release_test.go
 +++ b/kernel/model/updater_release_test.go
-@@ -18,8 +18,44 @@ import (
+@@ -18,8 +18,45 @@ import (
  	"path/filepath"
  	"strings"
  	"testing"
