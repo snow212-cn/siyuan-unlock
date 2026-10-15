@@ -296,6 +296,20 @@ jobs:
           tag: ${{ github.event.inputs.version }}
           replacesArtifacts: true
 
+      - name: Upload Linux AppImage
+        if: matrix.config.goos == 'linux' && matrix.config.goarch == 'amd64'
+        uses: ncipollo/release-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: ${{ github.workspace }}/siyuan-note/siyuan/app/build/siyuan-*.AppImage
+          allowUpdates: true
+          omitBody: true
+          omitName: true
+          tag: ${{ github.event.inputs.version }}
+          replacesArtifacts: true
+
       - name: Upload .deb packages
         if: ${{ matrix.config.deb_suffix != '' }}
         uses: ncipollo/release-action@v1
