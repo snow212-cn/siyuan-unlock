@@ -28,17 +28,6 @@ jobs:
             suffix: "linux.tar.gz"
             deb_suffix: "linux.deb"
           - os: ubuntu-22.04
-            name: ubuntu build linux.AppImage
-            kernel_path: "../app/kernel-linux/SiYuan-Kernel"
-            build_mode: "-buildmode=pie"
-            build_args: "-s -w -extldflags -static-pie -X github.com/siyuan-note/siyuan/kernel/util.Mode=prod"
-            electron_args: "dist-linux"
-            goos: "linux"
-            goarch: "amd64"
-            cc_path: "x86_64-linux-musl-cross/bin/x86_64-linux-musl-gcc"
-            suffix: "linux.AppImage"
-            deb_suffix: ""
-          - os: ubuntu-22.04
             kernel_path: "../app/kernel-linux-arm64/SiYuan-Kernel"
             build_mode: "-buildmode=pie"
             build_args: "-s -w -extldflags -static-pie -X github.com/siyuan-note/siyuan/kernel/util.Mode=prod"
@@ -301,6 +290,20 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: ${{ github.workspace }}/siyuan-note/siyuan/app/build/siyuan-*-${{ matrix.config.suffix }}
           name: siyuan-unlock-${{ github.event.inputs.version }}-${{ matrix.config.suffix }}
+          allowUpdates: true
+          omitBody: true
+          omitName: true
+          tag: ${{ github.event.inputs.version }}
+          replacesArtifacts: true
+
+      - name: Upload Linux AppImage
+        if: matrix.config.goos == 'linux' && matrix.config.goarch == 'amd64'
+        uses: ncipollo/release-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: ${{ github.workspace }}/siyuan-note/siyuan/app/build/siyuan-*.AppImage
           allowUpdates: true
           omitBody: true
           omitName: true
