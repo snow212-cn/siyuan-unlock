@@ -140,13 +140,6 @@ jobs:
         with:
           go-version-file: ${{ github.workspace }}/siyuan-note/siyuan/kernel/go.mod
           cache-dependency-path: "**/*.sum"
-      - name: Cache Go build artifacts
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/go-build
-          key: go-build-${{ runner.os }}-${{ matrix.config.goarch }}-${{ hashFiles('siyuan-note/siyuan/kernel/go.sum') }}-${{ github.event.inputs.version }}
-          restore-keys: |
-            go-build-${{ runner.os }}-${{ matrix.config.goarch }}-${{ hashFiles('siyuan-note/siyuan/kernel/go.sum') }}-
       - run: go version
 
       - name: Set up goversioninfo
@@ -164,8 +157,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: siyuan-note/siyuan/app/pnpm-lock.yaml
 
       - name: Install Node pnpm
         run: npm install -g ${{ github.event.inputs.packageManager }}
