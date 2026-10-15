@@ -267,12 +267,19 @@ jobs:
                   raise SystemExit(f"Expected exactly one target block in {config}: {block!r}")
               content = content.replace(block, "", 1)
 
+          if "\ndeb:\n" in content:
+              raise SystemExit(f"Unexpected existing deb config in {config}")
+          content = content.rstrip() + '\n\ndeb:\n  compression: "gz"\n'
           config.write_text(content, encoding="utf-8")
-          print(f"Removed unpublished Linux package targets for {arch}.")
+          print(f"Removed unpublished targets and set faster DEB compression for {arch}.")
           PY
 
       - name: Building Electron
-        run: pnpm run ${{ matrix.config.electron_args }}
+        run: |
+          if [[ "${{ matrix.config.goos }}" == "linux" ]]; then
+            export ELECTRON_BUILDER_COMPRESSION_LEVEL=1
+          fi
+          pnpm run ${{ matrix.config.electron_args }}
         working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
 
       - uses: joutvhu/get-release@v1
