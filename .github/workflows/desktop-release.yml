@@ -247,6 +247,41 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu
           echo 'SIYUAN_OCR_CC_ARM64=aarch64-linux-gnu-gcc' >> "$GITHUB_ENV"
 
+      - name: Remove Linux targets that are not uploaded
+        if: matrix.config.goos == 'linux'
+        shell: bash
+        working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
+        env:
+          GOARCH: ${{ matrix.config.goarch }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+
+          arch = os.environ["GOARCH"]
+          if arch == "amd64":
+              config = Path("electron-builder-linux.yml")
+              removals = ['    - target: "rpm"\n']
+          elif arch == "arm64":
+              config = Path("electron-builder-linux-arm64.yml")
+              removals = [
+                  '    - target: "AppImage"\n      arch: "arm64"\n',
+                  '    - target: "rpm"\n      arch: "arm64"\n',
+              ]
+          else:
+              raise SystemExit(f"Unexpected Linux architecture: {arch}")
+
+          content = config.read_text(encoding="utf-8")
+          for block in removals:
+              if content.count(block) != 1:
+                  raise SystemExit(f"Expected exactly one target block in {config}: {block!r}")
+              content = content.replace(block, "", 1)
+
+          config.write_text(content, encoding="utf-8")
+          print(f"Removed unpublished Linux package targets for {arch}.")
+          PY
+
       - name: Building Electron
         run: pnpm run ${{ matrix.config.electron_args }}
         working-directory: ${{ github.workspace }}/siyuan-note/siyuan/app
